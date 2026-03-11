@@ -4,7 +4,13 @@
 
 // --- State Management ---
 const STORAGE_KEY = 'transactions';
-let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+let transactions = [];
+try {
+    transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+} catch (e) {
+    console.error('Error parsing transactions from localStorage', e);
+    transactions = [];
+}
 let budgetLimit = parseFloat(localStorage.getItem('budgetLimit')) || 1000;
 let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
@@ -29,6 +35,7 @@ const budgetAlert = document.getElementById('budget-alert');
 
 const themeToggle = document.getElementById('theme-toggle');
 const exportBtn = document.getElementById('export-btn');
+const clearAllBtn = document.getElementById('clear-all-btn');
 
 // Mobile Sidebar Elements
 const sidebar = document.querySelector('.sidebar');
@@ -40,15 +47,27 @@ let categoryChart;
 
 function initChart() {
     const ctx = document.getElementById('category-chart').getContext('2d');
+    
+    // Global Defaults for styling
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = isDarkMode ? '#94a3b8' : '#64748b';
+    
     categoryChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Food', 'Travel', 'Bills', 'Shopping', 'Other'],
             datasets: [{
                 data: [0, 0, 0, 0, 0],
-                backgroundColor: ['#6366f1', '#10b981', '#ef4444', '#f59e0b', '#ec4899'],
-                borderWidth: 0,
-                hoverOffset: 12
+                backgroundColor: [
+                    '#6366f1', // Primary
+                    '#10b981', // Success
+                    '#f59e0b', // Warning
+                    '#ef4444', // Danger
+                    '#ec4899'  // Accent
+                ],
+                borderWidth: isDarkMode ? 2 : 0,
+                borderColor: isDarkMode ? '#1e293b' : '#ffffff',
+                hoverOffset: 15
             }]
         },
         options: {
@@ -58,14 +77,24 @@ function initChart() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: isDarkMode ? '#94a3b8' : '#64748b',
-                        padding: 20,
+                        padding: 25,
                         usePointStyle: true,
-                        font: { family: 'Inter', size: 12 }
+                        pointStyle: 'circle',
+                        font: { size: 12, weight: '500' }
                     }
+                },
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                    titleColor: isDarkMode ? '#f8fafc' : '#1e293b',
+                    bodyColor: isDarkMode ? '#94a3b8' : '#64748b',
+                    borderColor: 'var(--border)',
+                    borderWidth: 1,
+                    padding: 12,
+                    boxPadding: 4,
+                    usePointStyle: true
                 }
             },
-            cutout: '75%'
+            cutout: '70%'
         }
     });
 }
@@ -84,18 +113,28 @@ function addTransaction(e) {
         date: dateInput.value
     };
 
+    if (isNaN(transaction.amount) || transaction.amount <= 0) {
+        alert('Please enter a valid amount greater than zero.');
+        return;
+    }
+
     transactions.push(transaction);
     saveData();
     updateUI();
-    form.reset();
     setDefaultDate();
 }
 
-window.deleteTransaction = (id) => {
-    transactions = transactions.filter(t => t.id !== id);
-    saveData();
-    updateUI();
-};
+function clearAllTransactions() {
+    if (transactions.length === 0) return;
+    
+    if (confirm('Are you sure you want to delete all transactions? This action cannot be undone.')) {
+        transactions = [];
+        saveData();
+        updateUI();
+    }
+}
+
+// Deletion handled via event delegation below
 
 function updateUI() {
     transactionList.innerHTML = '';
@@ -119,7 +158,7 @@ function updateUI() {
                     <strong>${t.type === 'income' ? '+' : '-'}$${t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong>
                 </td>
                 <td style="text-align: right;">
-                    <button class="btn-delete" title="Delete" onclick="deleteTransaction(${t.id})">
+                    <button class="btn-delete" title="Delete" data-id="${t.id}">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </td>
@@ -178,7 +217,13 @@ function saveData() {
 }
 
 function setDefaultDate() {
-    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    if (dateInput) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+    }
 }
 
 function toggleDarkMode() {
@@ -187,7 +232,19 @@ function toggleDarkMode() {
     localStorage.setItem('darkMode', isDarkMode);
     
     if (categoryChart) {
+        // Update global defaults for future charts (if any)
+        Chart.defaults.color = isDarkMode ? '#94a3b8' : '#64748b';
+        
+        // Update specialized options
         categoryChart.options.plugins.legend.labels.color = isDarkMode ? '#94a3b8' : '#64748b';
+        categoryChart.data.datasets[0].borderColor = isDarkMode ? '#1e293b' : '#ffffff';
+        categoryChart.data.datasets[0].borderWidth = isDarkMode ? 2 : 0;
+        
+        // Update tooltips
+        categoryChart.options.plugins.tooltip.backgroundColor = isDarkMode ? '#1e293b' : '#ffffff';
+        categoryChart.options.plugins.tooltip.titleColor = isDarkMode ? '#f8fafc' : '#1e293b';
+        categoryChart.options.plugins.tooltip.bodyColor = isDarkMode ? '#94a3b8' : '#64748b';
+        
         categoryChart.update();
     }
     
@@ -196,19 +253,44 @@ function toggleDarkMode() {
 
 function exportCSV() {
     if (transactions.length === 0) return alert('Nothing to export');
+    
     const headers = ['Date', 'Description', 'Category', 'Type', 'Amount'];
-    const rows = transactions.map(t => [t.date, t.description, t.category, t.type, t.amount]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    
+    // Properly escape CSV fields that might contain commas or quotes
+    const escapeField = (field) => {
+        const stringified = String(field);
+        if (stringified.includes(',') || stringified.includes('"') || stringified.includes('\n')) {
+            return `"${stringified.replace(/"/g, '""')}"`;
+        }
+        return stringified;
+    };
+
+    const rows = transactions.map(t => [
+        escapeField(t.date), 
+        escapeField(t.description), 
+        escapeField(t.category), 
+        escapeField(t.type), 
+        escapeField(t.amount)
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + headers.join(",") + "\n" 
+        + rows.map(e => e.join(",")).join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = `expense_report.csv`;
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `expense_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link); // Required for FF
     link.click();
+    document.body.removeChild(link);
 }
 
 // --- Event Listeners ---
 if (form) form.addEventListener('submit', addTransaction);
 if (themeToggle) themeToggle.addEventListener('click', toggleDarkMode);
 if (exportBtn) exportBtn.addEventListener('click', exportCSV);
+if (clearAllBtn) clearAllBtn.addEventListener('click', clearAllTransactions);
 
 if (budgetLimitInput) {
     budgetLimitInput.addEventListener('change', (e) => {
@@ -231,6 +313,19 @@ navLinks.forEach(link => {
 // Sidebar Controls
 if (openSidebarBtn) openSidebarBtn.addEventListener('click', () => sidebar.classList.add('open'));
 if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+
+// Event Delegation for Transaction List
+if (transactionList) {
+    transactionList.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.btn-delete');
+        if (deleteBtn) {
+            const id = parseInt(deleteBtn.dataset.id);
+            transactions = transactions.filter(t => t.id !== id);
+            saveData();
+            updateUI();
+        }
+    });
+}
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {

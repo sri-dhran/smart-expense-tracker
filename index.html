@@ -145,7 +145,14 @@
                         <div class="glass-card history">
                             <div class="card-header">
                                 <h2><i class="fas fa-history"></i> Recent Activity</h2>
-                                <button id="export-btn" class="btn-secondary">Export CSV</button>
+                                <div class="header-actions">
+                                    <button id="clear-all-btn" class="btn-danger-outline" title="Clear All">
+                                        <i class="fas fa-trash-can"></i> Clear All
+                                    </button>
+                                    <button id="export-btn" class="btn-secondary">
+                                        <i class="fas fa-file-export"></i> Export CSV
+                                    </button>
+                                </div>
                             </div>
                             <div class="table-wrapper">
                                 <table id="transaction-table">
@@ -171,6 +178,6 @@
     </div>
 
     <!-- Logic -->
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
