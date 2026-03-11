@@ -157,6 +157,14 @@
                             </div>
                             <div class="table-wrapper">
                                 <table id="transaction-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Details</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                            <th style="text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
                                     <tbody id="transaction-list">
                                         <!-- Dynamic content -->
                                     </tbody>
@@ -171,16 +179,6 @@
     </div>
 
     <!-- Logic -->
-    <script type="module">
-        import Auth from './auth.js';
-        Auth.checkAuth();
-
-        const currentUser = Auth.getCurrentUser();
-        document.getElementById('welcome-msg').innerText = `Welcome, ${currentUser.name}!`;
-        document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff`;
-
-        document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
-    </script>
     <script type="module" src="script.js"></script>
 </body>
 </html>

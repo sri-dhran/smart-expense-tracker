@@ -319,6 +319,14 @@ input, select {
 /* Table Styles */
 .table-wrapper { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
+th {
+    text-align: left;
+    padding: 1rem 0.5rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
 td { padding: 1rem 0.5rem; border-bottom: 1px solid var(--border); }
 
 /* Icons & Colors */
@@ -363,6 +371,54 @@ td { padding: 1rem 0.5rem; border-bottom: 1px solid var(--border); }
     .layout-container { flex-direction: column; }
     
     /* Card list view for mobile transactions */
-    tr { display: flex; flex-direction: column; padding: 1rem 0; border-bottom: 1px solid var(--border); }
-    td { border: none; padding: 0.25rem 0; }
+    thead { display: none; }
+
+    tr {
+        display: grid;
+        grid-template-areas: 
+            "details amount"
+            "category action";
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem;
+        padding: 1.25rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    td {
+        border-bottom: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    td:nth-child(1) { /* Details (Date + Desc) */
+        grid-area: details;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    td:nth-child(1) .date-cell {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    td:nth-child(1) .desc-cell {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    td:nth-child(2) { grid-area: category; }
+
+    td:nth-child(3) { /* Amount */
+        grid-area: amount;
+        justify-content: flex-end;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    td:nth-child(4) { /* Action (Delete) */
+        grid-area: action;
+        justify-content: flex-end;
+    }
 }

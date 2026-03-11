@@ -6,6 +6,34 @@ import Auth from './auth.js';
 // --- Auth Guard ---
 Auth.checkAuth();
 const currentUser = Auth.getCurrentUser();
+if (!currentUser) {
+    // Stop execution if not authenticated (redirecting)
+    throw new Error('Unauthorized'); 
+}
+
+// Update UI with User Info
+document.addEventListener('DOMContentLoaded', () => {
+    const welcomeMsg = document.getElementById('welcome-msg');
+    const userAvatar = document.getElementById('user-avatar');
+    const logoutBtn = document.getElementById('logout-btn');
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+
+    if (welcomeMsg) welcomeMsg.innerText = `Welcome, ${currentUser.name}!`;
+    if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff`;
+    if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
+
+    // Placeholder for other nav links
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === '#') {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert('This feature is coming soon!');
+            });
+        }
+    });
+
+    initChart();
+});
 
 // --- State Management ---
 // Use user-specific keys for persistence
@@ -226,13 +254,13 @@ if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => sidebar.cla
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    initChart();
+    // Note: initChart is now called in the top-level DOMContentLoaded
     setDefaultDate();
-    budgetLimitInput.value = budgetLimit;
+    if (budgetLimitInput) budgetLimitInput.value = budgetLimit;
     
     if (isDarkMode) {
         document.body.classList.add('dark-mode');
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        if (themeToggle) themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
     
     updateUI();
