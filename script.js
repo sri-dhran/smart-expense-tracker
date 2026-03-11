@@ -196,7 +196,13 @@ function updateMonthlyBudget(totalExpense) {
     else if (percent > 70) budgetProgress.style.backgroundColor = 'var(--warning)';
     else budgetProgress.style.backgroundColor = 'var(--primary)';
 
-    budgetAlert.classList.toggle('hidden', monthlyTotal <= budgetLimit);
+    if (monthlyTotal > budgetLimit) {
+        budgetAlert.classList.remove('hidden');
+        budgetAlert.style.display = 'flex'; // Explicitly show
+    } else {
+        budgetAlert.classList.add('hidden');
+        budgetAlert.style.display = 'none'; // Explicitly hide
+    }
 }
 
 function updateChart() {
