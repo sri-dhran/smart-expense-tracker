@@ -1,10 +1,17 @@
 /**
- * Smart Expense Tracker - Core Logic
+ * Smart Expense Tracker - Dashboard Logic (Multi-user)
  */
+import Auth from './auth.js';
+
+// --- Auth Guard ---
+Auth.checkAuth();
+const currentUser = Auth.getCurrentUser();
 
 // --- State Management ---
-let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-let budgetLimit = parseFloat(localStorage.getItem('budgetLimit')) || 1000;
+// Use user-specific keys for persistence
+const STORAGE_KEY = `transactions_${currentUser.id}`;
+let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+let budgetLimit = parseFloat(localStorage.getItem(`budgetLimit_${currentUser.id}`)) || 1000;
 let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
 // --- DOM Elements ---
@@ -29,6 +36,11 @@ const budgetAlert = document.getElementById('budget-alert');
 const themeToggle = document.getElementById('theme-toggle');
 const exportBtn = document.getElementById('export-btn');
 
+// Mobile Sidebar Elements
+const sidebar = document.querySelector('.sidebar');
+const openSidebarBtn = document.getElementById('open-sidebar');
+const closeSidebarBtn = document.getElementById('close-sidebar');
+
 // --- Chart Initialization ---
 let categoryChart;
 
@@ -37,18 +49,12 @@ function initChart() {
     categoryChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: [],
+            labels: ['Food', 'Travel', 'Bills', 'Shopping', 'Other'],
             datasets: [{
-                data: [],
-                backgroundColor: [
-                    '#6366f1', // Primary
-                    '#10b981', // Success
-                    '#ef4444', // Danger
-                    '#f59e0b', // Warning
-                    '#ec4899'  // Pink
-                ],
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: ['#6366f1', '#10b981', '#ef4444', '#f59e0b', '#ec4899'],
                 borderWidth: 0,
-                hoverOffset: 10
+                hoverOffset: 12
             }]
         },
         options: {
@@ -58,20 +64,20 @@ function initChart() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: isDarkMode ? '#f8fafc' : '#1e293b',
+                        color: isDarkMode ? '#94a3b8' : '#64748b',
                         padding: 20,
+                        usePointStyle: true,
                         font: { family: 'Inter', size: 12 }
                     }
                 }
             },
-            cutout: '70%'
+            cutout: '75%'
         }
     });
 }
 
 // --- Functions ---
 
-// 1. Add Transaction
 function addTransaction(e) {
     e.preventDefault();
 
@@ -85,22 +91,20 @@ function addTransaction(e) {
     };
 
     transactions.push(transaction);
-    updateLocalStorage();
+    saveData();
     updateUI();
     form.reset();
-    setTodayDate();
+    setDefaultDate();
 }
 
-// 2. Delete Transaction
-function deleteTransaction(id) {
+// Global scope for onclick attribute in HTML
+window.deleteTransaction = (id) => {
     transactions = transactions.filter(t => t.id !== id);
-    updateLocalStorage();
+    saveData();
     updateUI();
-}
+};
 
-// 3. Update UI
 function updateUI() {
-    // History Table
     transactionList.innerHTML = '';
     
     if (transactions.length === 0) {
@@ -108,21 +112,22 @@ function updateUI() {
     } else {
         noTransactions.classList.add('hidden');
         
-        // Sort by date (descending)
-        const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sorted = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        sortedTransactions.forEach(t => {
+        sorted.forEach(t => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${t.date}</td>
-                <td>${t.description}</td>
+                <td>
+                    <div class="date-cell">${t.date}</div>
+                    <div class="desc-cell"><strong>${t.description}</strong></div>
+                </td>
                 <td><span class="badge">${t.category}</span></td>
                 <td class="${t.type === 'income' ? 'text-success' : 'text-danger'}">
-                    ${t.type === 'income' ? '+' : '-'}$${t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    <strong>${t.type === 'income' ? '+' : '-'}$${t.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong>
                 </td>
-                <td>
-                    <button class="btn-delete" onclick="deleteTransaction(${t.id})">
-                        <i class="fas fa-trash-can"></i>
+                <td style="text-align: right;">
+                    <button class="btn-delete" title="Delete" onclick="deleteTransaction(${t.id})">
+                        <i class="fas fa-trash-alt"></i>
                     </button>
                 </td>
             `;
@@ -130,136 +135,105 @@ function updateUI() {
         });
     }
 
-    // Calculations
-    const totalIncome = transactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
+    // Totals
+    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const balance = income - expense;
 
-    const totalExpense = transactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const balance = totalIncome - totalExpense;
-
-    // View Updates
     balanceDisplay.innerText = `$${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-    incomeDisplay.innerText = `$${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-    expenseDisplay.innerText = `$${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    incomeDisplay.innerText = `$${income.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    expenseDisplay.innerText = `$${expense.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
-    updateMonthlySummary(totalExpense);
+    updateMonthlyBudget(expense);
     updateChart();
 }
 
-// 4. Monthly Summary & Budget
-function updateMonthlySummary(totalExpense) {
+function updateMonthlyBudget(totalExpense) {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const monthlyItems = transactions.filter(t => {
+        const d = new Date(t.date);
+        return t.type === 'expense' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const monthlyTotal = monthlyItems.reduce((s, t) => s + t.amount, 0);
 
-    const monthlyExpense = transactions
-        .filter(t => {
-            const d = new Date(t.date);
-            return t.type === 'expense' && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-        })
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    monthlyExpenseText.innerText = `Monthly Expense: $${monthlyExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    monthlyExpenseText.innerText = `Spent: $${monthlyTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     
-    // Progress Bar
-    const percent = Math.min((monthlyExpense / budgetLimit) * 100, 100);
+    const percent = Math.min((monthlyTotal / budgetLimit) * 100, 100);
     budgetProgress.style.width = `${percent}%`;
     
     if (percent > 90) budgetProgress.style.backgroundColor = 'var(--danger)';
     else if (percent > 70) budgetProgress.style.backgroundColor = 'var(--warning)';
     else budgetProgress.style.backgroundColor = 'var(--primary)';
 
-    // Alert
-    if (monthlyExpense > budgetLimit) {
-        budgetAlert.classList.remove('hidden');
-    } else {
-        budgetAlert.classList.add('hidden');
-    }
+    budgetAlert.classList.toggle('hidden', monthlyTotal <= budgetLimit);
 }
 
-// 5. Update Chart
 function updateChart() {
     const expenses = transactions.filter(t => t.type === 'expense');
     const categories = ['Food', 'Travel', 'Bills', 'Shopping', 'Other'];
     const data = categories.map(cat => {
-        return expenses
-            .filter(t => t.category === cat)
-            .reduce((sum, t) => sum + t.amount, 0);
+        return expenses.filter(t => t.category === cat).reduce((s, t) => s + t.amount, 0);
     });
 
-    categoryChart.data.labels = categories;
     categoryChart.data.datasets[0].data = data;
     categoryChart.update();
 }
 
-// 6. Export to CSV
-function exportToCSV() {
-    if (transactions.length === 0) return alert('No data to export');
-
-    const headers = ['Date', 'Description', 'Category', 'Type', 'Amount'];
-    const rows = transactions.map(t => [t.date, t.description, t.category, t.type, t.amount]);
-    
-    let csvContent = "data:text/csv;charset=utf-8," 
-        + headers.join(",") + "\n"
-        + rows.map(e => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "smart_expense_report.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
 }
 
-// 7. Dark Mode
+function setDefaultDate() {
+    dateInput.value = new Date().toISOString().split('T')[0];
+}
+
 function toggleDarkMode() {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode', isDarkMode);
     localStorage.setItem('darkMode', isDarkMode);
     
-    // Update Chart Legend Colors
-    categoryChart.options.plugins.legend.labels.color = isDarkMode ? '#f8fafc' : '#1e293b';
+    categoryChart.options.plugins.legend.labels.color = isDarkMode ? '#94a3b8' : '#64748b';
     categoryChart.update();
     
     themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 }
 
-// 8. Storage
-function updateLocalStorage() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-}
-
-function setTodayDate() {
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.value = today;
+function exportCSV() {
+    if (transactions.length === 0) return alert('Nothing to export');
+    const headers = ['Date', 'Description', 'Category', 'Type', 'Amount'];
+    const rows = transactions.map(t => [t.date, t.description, t.category, t.type, t.amount]);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `expense_report_${currentUser.name.replace(/\s+/g, '_')}.csv`;
+    link.click();
 }
 
 // --- Event Listeners ---
 form.addEventListener('submit', addTransaction);
-exportBtn.addEventListener('click', exportToCSV);
 themeToggle.addEventListener('click', toggleDarkMode);
+exportBtn.addEventListener('click', exportCSV);
 
 budgetLimitInput.addEventListener('change', (e) => {
     budgetLimit = parseFloat(e.target.value) || 1000;
-    localStorage.setItem('budgetLimit', budgetLimit);
+    localStorage.setItem(`budgetLimit_${currentUser.id}`, budgetLimit);
     updateUI();
 });
 
-// --- Init ---
+// Sidebar Controls
+if (openSidebarBtn) openSidebarBtn.addEventListener('click', () => sidebar.classList.add('open'));
+if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     initChart();
-    setTodayDate();
+    setDefaultDate();
     budgetLimitInput.value = budgetLimit;
     
     if (isDarkMode) {
         document.body.classList.add('dark-mode');
         themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
-
+    
     updateUI();
 });

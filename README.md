@@ -2,30 +2,31 @@
 
 A clean, modern, and responsive web application to track your personal finances effectively.
 
-## 🚀 Features
+## 🚀 New Features
 
+- **Professional Authentication**: Secure-feeling login and signup system using LocalStorage.
+- **Sidebar-based Navigation**: Modern dashboard layout with a collapsible sidebar for seamless navigation.
+- **Multi-user Support**: Each user has their own private transaction history and budget settings.
 - **Real-time Dashboard**: Instantly see your current balance, total income, and expenditures.
-- **Transaction History**: Add and delete transactions with ease.
-- **Categorization**: Group expenses into Food, Travel, Bills, Shopping, and more.
 - **Visual Insights**: Interactive doughnut charts powered by **Chart.js**.
-- **Monthly Budgeting**: Set a monthly limit and receive visual alerts when you're close to or exceeding it.
-- **Dark Mode**: Switch between light and dark themes with a single click.
-- **Data Persistence**: Uses LocalStorage to keep your data safe even after a page refresh.
-- **CSV Export**: Download your transaction reports for further analysis.
+- **Dark Mode**: Sleek dark mode toggle that persists across sessions and pages.
+- **Mobile Friendly**: Fully responsive design with optimized touch targets and card-based mobile views.
 
 ## 🛠️ Tech Stack
 
-- **HTML5**: Structured with semantic elements.
-- **CSS3**: Modern styling with CSS Variables and Glassmorphism.
-- **JavaScript**: Pure Vanilla JS for core logic.
-- **Chart.js**: For interactive data visualization.
-- **Font Awesome**: Professional iconography.
+- **HTML5/CSS3**: Modern layouts with Glassmorphism and CSS Variables.
+- **JavaScript (ES6+)**: Modular logic with `import/export`.
+- **Chart.js**: High-quality data visualization.
+- **LocalStorage**: Client-side data persistence for accounts and transactions.
 
 ## 📂 Project Structure
 
-- `index.html`: Main dashboard layout.
-- `styles.css`: Custom theme and responsive design.
-- `script.js`: State management and UI logic.
+- `index.html`: Login page.
+- `signup.html`: Registration page.
+- `dashboard.html`: The core application dashboard.
+- `auth.js`: Authentication and session management logic.
+- `script.js`: Dashboard interaction and multi-user data handling.
+- `styles.css`: Unified professional styling.
 
 ## 📝 How to Use
 
