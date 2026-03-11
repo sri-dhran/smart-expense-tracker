@@ -62,17 +62,38 @@
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
+            
+            errorMsg.classList.add('hidden');
+            errorMsg.innerText = '';
+
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                return showError('Please enter both email and password');
+            }
 
             const result = Auth.login(email, password);
             if (result.success) {
-                window.location.href = 'dashboard.html';
+                // Smoothly redirect
+                form.innerHTML = `
+                    <div class="success-state">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                        <p>Logging you in...</p>
+                    </div>
+                `;
+                setTimeout(() => {
+                    window.location.replace('dashboard.html');
+                }, 1000);
             } else {
-                errorMsg.innerText = result.message;
-                errorMsg.classList.remove('hidden');
+                showError(result.message);
             }
         });
+
+        function showError(msg) {
+            errorMsg.innerText = msg;
+            errorMsg.classList.remove('hidden');
+        }
 
         // Toggle password visibility
         document.querySelector('.toggle-password').addEventListener('click', function() {

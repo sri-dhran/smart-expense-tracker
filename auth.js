@@ -48,12 +48,17 @@ const Auth = {
     // 3. Logout user
     logout() {
         localStorage.removeItem('currentUser');
-        window.location.href = 'index.html';
+        // Use direct assignment to ensure immediate redirect
+        window.location.replace('index.html');
     },
 
     // 4. Get current user
     getCurrentUser() {
-        return JSON.parse(localStorage.getItem('currentUser'));
+        try {
+            return JSON.parse(localStorage.getItem('currentUser'));
+        } catch (e) {
+            return null;
+        }
     },
 
     // 5. Check if authenticated
@@ -64,14 +69,14 @@ const Auth = {
     // 6. Guard: Redirect to login if not authenticated
     checkAuth() {
         if (!this.isAuthenticated()) {
-            window.location.href = 'index.html';
+            window.location.replace('index.html');
         }
     },
 
-    // 7. Guard: Redirect to dashboard if already authenticated (for login/signup pages)
+    // 7. Guard: Redirect to dashboard if already authenticated
     redirectIfAuthenticated() {
         if (this.isAuthenticated()) {
-            window.location.href = 'dashboard.html';
+            window.location.replace('dashboard.html');
         }
     }
 };
