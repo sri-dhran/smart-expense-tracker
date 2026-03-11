@@ -325,19 +325,116 @@ td {
 
 .hidden { display: none; }
 
-/* Responsive Design */
-@media (max-width: 992px) {
+/* Responsive Design Improvements */
+@media (max-width: 1024px) {
+    .app-container {
+        padding: 1rem;
+    }
+    
     .main-grid {
         grid-template-columns: 1fr;
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
     .form-row {
         grid-template-columns: 1fr;
     }
-    
-    .summary-grid {
-        grid-template-columns: 1fr;
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 0;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Transform Table into Cards for Mobile */
+    thead {
+        display: none; /* Hide headers on mobile */
+    }
+
+    tr {
+        display: grid;
+        grid-template-areas: 
+            "desc amount"
+            "date action"
+            "cat action";
+        gap: 0.5rem;
+        padding: 1rem 0;
+        border-bottom: 2px solid var(--border);
+    }
+
+    td {
+        border-bottom: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    td:nth-child(2) { /* Description */
+        grid-area: desc;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    td:nth-child(4) { /* Amount */
+        grid-area: amount;
+        justify-content: flex-end;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    td:nth-child(1) { /* Date */
+        grid-area: date;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    td:nth-child(3) { /* Category */
+        grid-area: cat;
+    }
+
+    td:last-child { /* Action */
+        grid-area: action;
+        justify-content: flex-end;
+    }
+
+    .btn-delete {
+        background: rgba(239, 68, 68, 0.1);
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo h1 {
+        font-size: 1.25rem;
+    }
+
+    .summary-card {
+        padding: 1rem;
+    }
+
+    .card-info p {
+        font-size: 1.25rem;
+    }
+
+    .glass-card {
+        padding: 1.25rem;
+    }
+
+    input, select, .btn-primary {
+        font-size: 1rem;
+        padding: 0.875rem; /* Larger touch targets */
     }
 }
