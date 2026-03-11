@@ -35,4 +35,4 @@ A clean, modern, and responsive web application to track your personal finances 
 3. Start tracking your expenses!
 
 ---
-Built with ❤️ by Antigravity
+With The Help of Antigravity
