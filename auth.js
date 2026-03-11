@@ -1,82 +1,73 @@
-/**
- * auth.js - Session and Authentication Logic
- */
-
 const Auth = {
-    // 1. Register a new user
+
+    // 1️⃣ Register user
     register(name, email, password) {
-        const users = JSON.parse(localStorage.getItem('users')) || [];
-        
-        // Check if user already exists
-        if (users.find(u => u.email === email)) {
-            return { success: false, message: 'Email already registered' };
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+
+        // check if user already exists
+        const existing = users.find(user => user.email === email);
+        if (existing) {
+            return { success: false, message: "Email already registered" };
         }
 
         const newUser = {
             id: Date.now(),
             name,
             email,
-            password, // In a real app, this would be hashed
-            createdAt: new Date().toISOString()
+            password
         };
 
         users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem("users", JSON.stringify(users));
+
         return { success: true };
     },
 
-    // 2. Login user
+    // 2️⃣ Login user
     login(email, password) {
-        const users = JSON.parse(localStorage.getItem('users')) || [];
-        const user = users.find(u => u.email === email && u.password === password);
+        const users = JSON.parse(localStorage.getItem("users")) || [];
 
-        if (user) {
-            // Store session
-            const session = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                loginTime: new Date().toISOString()
-            };
-            localStorage.setItem('currentUser', JSON.stringify(session));
-            return { success: true };
+        const user = users.find(
+            u => u.email === email && u.password === password
+        );
+
+        if (!user) {
+            return { success: false, message: "Invalid email or password" };
         }
 
-        return { success: false, message: 'Invalid email or password' };
+        // save session
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+
+        return { success: true };
     },
 
-    // 3. Logout user
+    // 3️⃣ Logout
     logout() {
-        localStorage.removeItem('currentUser');
-        // Use direct assignment to ensure immediate redirect
-        window.location.replace('index.html');
+        localStorage.removeItem("loggedInUser");
+        window.location.href = "index.html";
     },
 
-    // 4. Get current user
+    // 4️⃣ Get current user
     getCurrentUser() {
-        try {
-            return JSON.parse(localStorage.getItem('currentUser'));
-        } catch (e) {
-            return null;
-        }
+        return JSON.parse(localStorage.getItem("loggedInUser"));
     },
 
-    // 5. Check if authenticated
+    // 5️⃣ Check if logged in
     isAuthenticated() {
         return this.getCurrentUser() !== null;
     },
 
-    // 6. Guard: Redirect to login if not authenticated
+    // 6️⃣ Protect dashboard
     checkAuth() {
         if (!this.isAuthenticated()) {
-            window.location.replace('index.html');
+            window.location.href = "index.html";
         }
     },
 
-    // 7. Guard: Redirect to dashboard if already authenticated
+    // 7️⃣ Redirect if already logged in
     redirectIfAuthenticated() {
         if (this.isAuthenticated()) {
-            window.location.replace('dashboard.html');
+            window.location.href = "dashboard.html";
         }
     }
 };
