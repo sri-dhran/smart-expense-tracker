@@ -1,45 +1,11 @@
 /**
- * Smart Expense Tracker - Dashboard Logic (Multi-user)
+ * Smart Expense Tracker - Core Logic
  */
-import Auth from './auth.js';
-
-// --- Auth Guard ---
-Auth.checkAuth();
-const currentUser = Auth.getCurrentUser();
-if (!currentUser) {
-    // Stop execution if not authenticated (redirecting)
-    throw new Error('Unauthorized'); 
-}
-
-// Update UI with User Info
-document.addEventListener('DOMContentLoaded', () => {
-    const welcomeMsg = document.getElementById('welcome-msg');
-    const userAvatar = document.getElementById('user-avatar');
-    const logoutBtn = document.getElementById('logout-btn');
-    const navLinks = document.querySelectorAll('.sidebar-nav a');
-
-    if (welcomeMsg) welcomeMsg.innerText = `Welcome, ${currentUser.name}!`;
-    if (userAvatar) userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff`;
-    if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
-
-    // Placeholder for other nav links
-    navLinks.forEach(link => {
-        if (link.getAttribute('href') === '#') {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert('This feature is coming soon!');
-            });
-        }
-    });
-
-    initChart();
-});
 
 // --- State Management ---
-// Use user-specific keys for persistence
-const STORAGE_KEY = `transactions_${currentUser.id}`;
+const STORAGE_KEY = 'transactions';
 let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-let budgetLimit = parseFloat(localStorage.getItem(`budgetLimit_${currentUser.id}`)) || 1000;
+let budgetLimit = parseFloat(localStorage.getItem('budgetLimit')) || 1000;
 let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
 // --- DOM Elements ---
@@ -125,7 +91,6 @@ function addTransaction(e) {
     setDefaultDate();
 }
 
-// Global scope for onclick attribute in HTML
 window.deleteTransaction = (id) => {
     transactions = transactions.filter(t => t.id !== id);
     saveData();
@@ -163,7 +128,6 @@ function updateUI() {
         });
     }
 
-    // Totals
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     const balance = income - expense;
@@ -203,8 +167,10 @@ function updateChart() {
         return expenses.filter(t => t.category === cat).reduce((s, t) => s + t.amount, 0);
     });
 
-    categoryChart.data.datasets[0].data = data;
-    categoryChart.update();
+    if (categoryChart) {
+        categoryChart.data.datasets[0].data = data;
+        categoryChart.update();
+    }
 }
 
 function saveData() {
@@ -212,7 +178,7 @@ function saveData() {
 }
 
 function setDefaultDate() {
-    dateInput.value = new Date().toISOString().split('T')[0];
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 }
 
 function toggleDarkMode() {
@@ -220,8 +186,10 @@ function toggleDarkMode() {
     document.body.classList.toggle('dark-mode', isDarkMode);
     localStorage.setItem('darkMode', isDarkMode);
     
-    categoryChart.options.plugins.legend.labels.color = isDarkMode ? '#94a3b8' : '#64748b';
-    categoryChart.update();
+    if (categoryChart) {
+        categoryChart.options.plugins.legend.labels.color = isDarkMode ? '#94a3b8' : '#64748b';
+        categoryChart.update();
+    }
     
     themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 }
@@ -233,19 +201,31 @@ function exportCSV() {
     const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
     const link = document.createElement("a");
     link.href = encodeURI(csvContent);
-    link.download = `expense_report_${currentUser.name.replace(/\s+/g, '_')}.csv`;
+    link.download = `expense_report.csv`;
     link.click();
 }
 
 // --- Event Listeners ---
-form.addEventListener('submit', addTransaction);
-themeToggle.addEventListener('click', toggleDarkMode);
-exportBtn.addEventListener('click', exportCSV);
+if (form) form.addEventListener('submit', addTransaction);
+if (themeToggle) themeToggle.addEventListener('click', toggleDarkMode);
+if (exportBtn) exportBtn.addEventListener('click', exportCSV);
 
-budgetLimitInput.addEventListener('change', (e) => {
-    budgetLimit = parseFloat(e.target.value) || 1000;
-    localStorage.setItem(`budgetLimit_${currentUser.id}`, budgetLimit);
-    updateUI();
+if (budgetLimitInput) {
+    budgetLimitInput.addEventListener('change', (e) => {
+        budgetLimit = parseFloat(e.target.value) || 1000;
+        localStorage.setItem('budgetLimit', budgetLimit);
+        updateUI();
+    });
+}
+
+const navLinks = document.querySelectorAll('.sidebar-nav a');
+navLinks.forEach(link => {
+    if (link.getAttribute('href') === '#') {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('This feature is coming soon!');
+        });
+    }
 });
 
 // Sidebar Controls
@@ -254,7 +234,7 @@ if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => sidebar.cla
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Note: initChart is now called in the top-level DOMContentLoaded
+    initChart();
     setDefaultDate();
     if (budgetLimitInput) budgetLimitInput.value = budgetLimit;
     
