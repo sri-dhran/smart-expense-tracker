@@ -301,13 +301,40 @@ if (budgetLimitInput) {
 }
 
 const navLinks = document.querySelectorAll('.sidebar-nav a');
-navLinks.forEach(link => {
-    if (link.getAttribute('href') === '#') {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('This feature is coming soon!');
-        });
+const navSections = document.querySelectorAll('.nav-section');
+
+// Navigation Logic
+function handleNavigation(e) {
+    e.preventDefault();
+    
+    const targetId = e.currentTarget.getAttribute('data-target');
+    if (!targetId) return;
+
+    // 1. Remove active class from all links
+    navLinks.forEach(link => link.parentElement.classList.remove('active'));
+    
+    // 2. Add active class to clicked link
+    e.currentTarget.parentElement.classList.add('active');
+
+    // 3. Hide all sections
+    navSections.forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // 4. Show target section
+    const targetSection = document.getElementById(targetId);
+    if (targetSection) {
+        targetSection.classList.add('active');
     }
+
+    // 5. Close sidebar on mobile after navigation
+    if (window.innerWidth <= 768) {
+        sidebar.classList.remove('open');
+    }
+}
+
+navLinks.forEach(link => {
+    link.addEventListener('click', handleNavigation);
 });
 
 // Sidebar Controls

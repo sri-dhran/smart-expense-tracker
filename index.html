@@ -25,10 +25,10 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li class="active"><a href="#"><i class="fas fa-th-large"></i> Dashboard</a></li>
-                    <li><a href="#"><i class="fas fa-list"></i> Transactions</a></li>
-                    <li><a href="#"><i class="fas fa-chart-line"></i> Reports</a></li>
-                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li class="active"><a href="#" data-target="dashboard-section"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="#" data-target="transactions-section"><i class="fas fa-list"></i> Transactions</a></li>
+                    <li><a href="#" data-target="reports-section"><i class="fas fa-chart-line"></i> Reports</a></li>
+                    <li><a href="#" data-target="settings-section"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
         </aside>
@@ -48,7 +48,9 @@
             </header>
 
             <main class="content-body">
-                <div class="budget-alert hidden" id="budget-alert">
+                <!-- Dashboard Section -->
+                <section id="dashboard-section" class="nav-section active">
+                    <div class="budget-alert hidden" id="budget-alert">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Monthly budget exceeded!</span>
                 </div>
@@ -172,7 +174,32 @@
                             <p id="no-transactions" class="empty-state">No transactions yet.</p>
                         </div>
                     </div>
-                </div>
+                </section>
+
+                <!-- Transactions Section -->
+                <section id="transactions-section" class="nav-section">
+                    <div class="glass-card">
+                        <h2><i class="fas fa-list"></i> All Transactions</h2>
+                        <p>Detailed view of all transactions will be displayed here.</p>
+                        <!-- In the future, the transaction table could be moved or duplicated here for a full-page view -->
+                    </div>
+                </section>
+
+                <!-- Reports Section -->
+                <section id="reports-section" class="nav-section">
+                    <div class="glass-card">
+                        <h2><i class="fas fa-chart-line"></i> Financial Reports</h2>
+                        <p>Detailed monthly and yearly reports coming soon.</p>
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settings-section" class="nav-section">
+                    <div class="glass-card">
+                        <h2><i class="fas fa-cog"></i> Settings</h2>
+                        <p>User profile, categories, and application settings coming soon.</p>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
